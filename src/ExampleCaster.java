@@ -12,13 +12,13 @@ public class ExampleCaster extends Multicaster {
      * No initializations needed for this simple one
      */
     public void init() {
-        mcui.debug("The network has "+hosts+" hosts!");
+        mcui.debug("The network has "+hosts+" hosts!~~~");
     }
         
     /**
      * The GUI calls this module to multicast a message
      */
-    public void cast(String messagetext) {
+    public void cast(String messagetext) { /* messagetext is the input from UI */
         for(int i=0; i < hosts; i++) {
             /* Sends to everyone except itself */
             if(i != id) {
@@ -26,7 +26,7 @@ public class ExampleCaster extends Multicaster {
             }
         }
         mcui.debug("Sent out: \""+messagetext+"\"");
-        mcui.deliver(id, messagetext, "from myself!");
+        mcui.deliver(id, messagetext, "from myself! my id is:"+getId());
     }
     
     /**
