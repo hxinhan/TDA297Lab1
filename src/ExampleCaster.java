@@ -52,6 +52,16 @@ public class ExampleCaster extends Multicaster {
      * @param message  The message received
      */
     public void basicreceive(int peer,Message message) {
+    	//B-deliver(<m,unique_id>)
+    	if(){
+    		
+    	}
+    	
+    	//B-deliver(g,<"order",unique_id,Sg)
+    	if(){
+    		
+    	}
+    	
     	// check if the current node is the sequencer
     	if(sequencer_id == getId()){
     		mcui.debug("I'm the SEQUENCER!");
