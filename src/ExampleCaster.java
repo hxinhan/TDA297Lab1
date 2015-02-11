@@ -55,14 +55,24 @@ public class ExampleCaster extends Multicaster {
     	// check if the current node is the sequencer
     	if(sequencer_id == getId()){
     		mcui.debug("I'm the SEQUENCER!");
-    		String messagetext = ((ExampleMessage)message).text;
-    		String[] unique_id = ((ExampleMessage)message).text.split(":");
-    		System.out.println("--"+unique_id[0]);
-    		System.out.println("--"+unique_id[1]);
-    		System.out.println("--"+unique_id[2]);
+    		// Split to get unique id
+    		String unique_id = ((ExampleMessage)message).text.split(":")[1];
+    		System.out.println("unique_id="+unique_id);
+    		String sequencer_multicast = "order:"+unique_id+":"+String.valueOf(Sg);
+    		//B-multicast(g,<"order",unique_id,Sg)
+    		for(int i=0; i < hosts; i++) {
+                /* Sends to everyone except itself */
+                if(i != id) {
+                    bcom.basicsend(i,new ExampleMessage(id, sequencer_multicast));
+                }
+            }
+    		
+    		Sg = Sg+1;
+    		
     	}
     	else{
-    		mcui.deliver(peer, ((ExampleMessage)message).text);
+    		hold_back_queue.add(((ExampleMessage)message).text);
+    		//mcui.deliver(peer, ((ExampleMessage)message).text);
     	}
     	
         //mcui.deliver(peer, ((ExampleMessage)message).text);
