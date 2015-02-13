@@ -15,7 +15,8 @@ public class ExampleCaster extends Multicaster {
 	int Sg;
 	int sequencer_id; // sequencer's id
 	HashMap<String, ExtendMessage> HoldBackQueue; // the hold-back queue to store the messages that we have received but not delivered
-	HashSet<String> ReceivedMessages; // store all the messages which have received
+	//HashSet<String> ReceivedMessages; // store all the messages which have received
+	HashSet<String> ReceivedOrders; // store all the orders which have received
 	// hold_back_queue
 	final List<String> hold_back_queue = new LinkedList<String>();
 	//UUID uuid = UUID.randomUUID();
@@ -28,7 +29,7 @@ public class ExampleCaster extends Multicaster {
         Rg = 0;
         Sg = 0;
         sequencer_id = hosts -1;
-        ReceivedMessages = new HashSet<String>();
+        //ReceivedMessages = new HashSet<String>();
         HoldBackQueue = new HashMap<String, ExtendMessage>();
         
         mcui.debug("The network has "+hosts+" hosts!");
@@ -61,7 +62,6 @@ public class ExampleCaster extends Multicaster {
     	for(int i=0; i < hosts; i++) {
             /* Sends to everyone except itself */
             if(i != id) {
-            	//messagetext = messagetext+':'+UUID.randomUUID();
                 bcom.basicsend(i,message);
             }
         }
@@ -75,7 +75,7 @@ public class ExampleCaster extends Multicaster {
     public void cast(String messagetext) { /* messagetext is the input from UI */
 
     	String message_id = createUniqueId();
-    	ExtendMessage message = new ExtendMessage(id, messagetext, message_id,ExtendMessage.MESSAGE_TYPE_TEXT);
+    	ExtendMessage message = new ExtendMessage(id, messagetext, message_id,ExtendMessage.TYPE_MESSAGE);
         multicast(message);
     	
         mcui.debug("Sent out: \""+messagetext+"\"");
@@ -84,8 +84,7 @@ public class ExampleCaster extends Multicaster {
         }
         else{
         	mcui.debug("Hold to wait. Put the message in hold-back queue");
-        	HoldBackQueue.put(message.getMessageId(),message);
-        	
+        	HoldBackQueue.put(message.getIdNumber(),message);
         }
         
         // Add message to the hold-back queue
@@ -98,23 +97,52 @@ public class ExampleCaster extends Multicaster {
      * @param message  The message received
      */
     public void basicreceive(int peer,Message message) {
+    	
     	ExtendMessage received_message = (ExtendMessage) message;
-    	// the message received does not belong to ReceivedMessages
-    	if(ReceivedMessages.contains(received_message.getMessageId()) == false){
-    		// add the current received message to ReceivedMessages set
-    		ReceivedMessages.add(received_message.getMessageId());
-    		if(received_message.getSender() != id){
-    			multicast(received_message);
-    		}
-    		mcui.deliver(received_message.getSender(), received_message.getText());
+    	
+    	/* if the received message is the type of MESSAGE */
+    	if(received_message.getType() == ExtendMessage.TYPE_MESSAGE){
+    		// the message received does not belong to ReceivedMessages
+    		/*
+        	if(ReceivedMessages.contains(received_message.getIdNumber()) == false){
+        		// add the current received message to ReceivedMessages set
+        		ReceivedMessages.add(received_message.getIdNumber());
+        		// if the node is not the sender
+        		if(id != received_message.getSender()){
+        			// R-multicast the received message to other nodes for reliability
+        			multicast(received_message);
+        			// the sender has already put the message in the hold-back queue when it sends this message
+        			HoldBackQueue.put(received_message.getIdNumber(),received_message);
+        		}
+        		//HoldBackQueue.put(received_message.getIdNumber(),received_message);
+        	}
+        	*/
+    		// the message received has not been put in HoldBackQueue
+    		if(HoldBackQueue.containsKey(received_message.getIdNumber()) == false){
+    			mcui.debug("the message received has not been put in HoldBackQueue");
+        		// add the current received message to ReceivedMessages set
+    			HoldBackQueue.put(received_message.getIdNumber(),received_message);
+        		// if the node is not the sender
+        		if(id != received_message.getSender()){
+        			// R-multicast the received message to other nodes for reliability
+        			mcui.debug("the node is not the sender");
+        			multicast(received_message);
+        		}
+        	}
+        	// the message received has already been put in HoldBackQueue
+        	else{
+        		mcui.debug("the message received has already been put in HoldBackQueue");
+        		return;
+        	}
     	}
-    	// the message received already belongs to ReceivedMessages
-    	else{
-    		return;
+    	
+    	/* if the received message is the type of TYPE_SEQ_ORDER */
+    	if(received_message.getType() == ExtendMessage.TYPE_SEQ_ORDER){
+    		mcui.debug("TYPE_SEQ_ORDER");
     	}
     	
     		
-    	Sg = Sg+1;
+    	//Sg = Sg+1;
     		
     	
 
@@ -139,17 +167,17 @@ public class ExampleCaster extends Multicaster {
 
 class ExtendMessage extends Message {
     
-    String message_text;
-    String message_id;
-    int message_type;
-    static final int MESSAGE_TYPE_SEQ_ORDER = 1;
-    static final int MESSAGE_TYPE_TEXT = 0;
+    String text;
+    String id_number;
+    int type;
+    static final int TYPE_SEQ_ORDER = 1;
+    static final int TYPE_MESSAGE = 0;
         
     public ExtendMessage(int sender,String text,String id,int type) {
         super(sender);
-        this.message_text = text;
-        this.message_id = id;
-        this.message_type = type;
+        this.text = text;
+        this.id_number = id;
+        this.type = type;
     }
     
     /**
@@ -158,13 +186,13 @@ class ExtendMessage extends Message {
      * purposes.
      */
     public String getText() {
-        return message_text;
+        return text;
     }
-    public String getMessageId() {
-        return message_id;
+    public String getIdNumber() {
+        return id_number;
     }
-    public int getMessageType() {
-        return message_type;
+    public int getType() {
+        return type;
     }
     
     public static final long serialVersionUID = 0;
