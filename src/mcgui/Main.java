@@ -57,7 +57,7 @@ public class Main {
             at.start();
             
             /* Waining for startup of others*/
-            Thread.sleep(6000);
+            Thread.sleep(3000);
             
             /* Connecting*/
             for(int i=0; i < numberofclients; i++) {
