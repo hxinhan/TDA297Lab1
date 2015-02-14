@@ -79,24 +79,10 @@ public class ExampleCaster extends Multicaster {
      */
     // For process to R-multicast message to group
     public void cast(String messagetext) { /* messagetext is the input from UI */
-
     	String message_id = createUniqueId();
     	ExtendMessage message = new ExtendMessage(id, messagetext, message_id,ExtendMessage.TYPE_MESSAGE);
-        multicast(message);
-    	
+        multicast(message); 	
         mcui.debug("Sent out: \""+messagetext+"\"");
-        
-        if(isSequencer()){
-        	mcui.debug("I'm the sequencer.");
-        	//generateSeqMulticast(Sg);
-        	//mcui.deliver(id, messagetext, "from sequencer!");
-        	//HoldBackQueue.put(message.getIdNumber(),message);
-        }
-        else{
-        	//HoldBackQueue.put(message.getIdNumber(),message);
-        }
-
-        //mcui.deliver(id, messagetext, "from myself!");
     }
     
     
@@ -134,12 +120,10 @@ public class ExampleCaster extends Multicaster {
         		return true;
         	}
     	}
-    	
     	return false;
-    	
     }
     
- // Generates Sequencer Number and multicasts to other nodes
+    // Generates Sequencer Number and multicasts to other nodes
     private void generateSeqMulticast(ExtendMessage received_message){
     	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! id
     	ExtendMessage order = new ExtendMessage(received_message.getSender(), received_message.getText()+"/"+String.valueOf(Sg), received_message.getIdNumber(),ExtendMessage.TYPE_SEQ_ORDER);
@@ -149,12 +133,12 @@ public class ExampleCaster extends Multicaster {
     	Sg = Sg + 1;
     }
     
-    // deliver message
+    // Deliver message
     private void deliverMessage(ExtendMessage received_message){
     	mcui.debug("HoldBackQueue.containsKey(received_message.getIdNumber())="+HoldBackQueue.containsKey(received_message.getIdNumber()));
     	mcui.debug("Rg == Integer.valueOf(received_message.getText()="+Integer.valueOf(received_message.getText().split("/")[1]));
     	
-    	while(HoldBackQueue.containsKey(received_message.getIdNumber()) && Rg == Integer.valueOf(received_message.getText().split("/")[1])){ //&& Rg == Integer.valueOf(received_message.getText())
+    	while(HoldBackQueue.containsKey(received_message.getIdNumber()) && Rg == Integer.valueOf(received_message.getText().split("/")[1])){ 
     		HoldBackQueue.remove(received_message.getText());
     		ReceivedOrders.remove(received_message.getIdNumber());
     		mcui.deliver(received_message.getSender(), received_message.getText().split("/")[0]);
@@ -180,26 +164,13 @@ public class ExampleCaster extends Multicaster {
 			HoldBackQueue.put(received_message.getIdNumber(),received_message);
 			if(isSequencer()){
 				generateSeqMulticast(received_message);
-	        	//mcui.deliver(message.getSender(), received_message.getText(),"isSequencerr()");
-			}
-			else{
-				//deliverMessage(received_message);
-				//HoldBackQueue.put(received_message.getIdNumber(),received_message);
 			}
     	}
     	if(received_message.getType() == ExtendMessage.TYPE_SEQ_ORDER){
-    		/*
-    		if(isSequencer()){
-    			return;
-    		}
-    		*/
     		// put the current received order in ReceivedOrders
 			ReceivedOrders.put(received_message.getIdNumber(),received_message);
 			deliverMessage(received_message);
     	}
-    	
-    	
-
 
     }
 
@@ -212,10 +183,7 @@ public class ExampleCaster extends Multicaster {
     public void basicpeerdown(int peer) {
         mcui.debug("Peer "+peer+" has been dead for a while now!");
     }
-    
-    
- 
-    
+      
     
 }
 
