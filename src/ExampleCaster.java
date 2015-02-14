@@ -105,10 +105,14 @@ public class ExampleCaster extends Multicaster {
     		// the message received has not been put in HoldBackQueue
         	else{
         		// if the node is not the sender
+        		/*
         		if(id != received_message.getSender()){
         			// R-multicast the received message to other nodes for reliability
-        			multicast(received_message);
+        			//multicast(received_message);
         		}
+        		*/
+        		// R-multicast the received message to all nodes for reliability
+    			multicast(received_message);
         		return false;
         	}
     	}
@@ -122,10 +126,14 @@ public class ExampleCaster extends Multicaster {
     		// the order received has not been put in ReceivedOrders
         	else{
         		// if the node is not the sender  id != received_message.getSender()
+        		/*
         		if(isSequencer() == false){
         			// R-multicast the received message to other nodes for reliability
-        			multicast(received_message);
+        			//multicast(received_message);
         		}
+        		*/
+        		// R-multicast the received message to all nodes for reliability
+    			multicast(received_message);
         	}
     	}
     	return false;
