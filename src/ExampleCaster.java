@@ -21,6 +21,9 @@ public class ExampleCaster extends Multicaster {
 	// hold_back_queue
 	final List<String> hold_back_queue = new LinkedList<String>();
 	//UUID uuid = UUID.randomUUID();
+	int ALIVE;
+	int CRASHED;
+	int[] nodesStatus;//will store the status of nodes. 0 = Alive 1 = Crashed
 	
     /**
      * No initializations needed for this simple one
@@ -33,6 +36,9 @@ public class ExampleCaster extends Multicaster {
         //ReceivedMessages = new HashSet<String>();
         HoldBackQueue = new HashMap<String, ExtendMessage>();
         ReceivedOrders = new HashMap<String, ExtendMessage>();
+        ALIVE = 0;
+        CRASHED = 1;
+        nodesStatus = new int[hosts];
         
         mcui.debug("The network has "+hosts+" hosts!");
         if(isSequencer()){
@@ -69,7 +75,10 @@ public class ExampleCaster extends Multicaster {
                 bcom.basicsend(i,message);
             }
             */
-    		bcom.basicsend(i,message);
+    		/* Sends to everyone except crashed node */
+    		if(nodesStatus[i] != CRASHED){
+    			bcom.basicsend(i,message);
+    		}
         }
     }
     
@@ -82,7 +91,7 @@ public class ExampleCaster extends Multicaster {
     	String message_id = createUniqueId();
     	ExtendMessage message = new ExtendMessage(id, messagetext, message_id,ExtendMessage.TYPE_MESSAGE);
         multicast(message); 	
-        mcui.debug("Sent out: \""+messagetext+"\"");
+        //mcui.debug("Sent out: \""+messagetext+"\"");
     }
     
     
@@ -99,13 +108,13 @@ public class ExampleCaster extends Multicaster {
         	}
         	// the message received has already been put in HoldBackQueue
         	else{
-        		mcui.debug("the MESSAGE has already been put in HoldBackQueue");
+        		//mcui.debug("the MESSAGE has already been put in HoldBackQueue");
         		return true;
         	}
     	}
     	/* if the received message is the type of TYPE_SEQ_ORDER */
     	if(received_message.getType() == ExtendMessage.TYPE_SEQ_ORDER){
-    		mcui.debug("TYPE_SEQ_ORDER");
+    		//mcui.debug("TYPE_SEQ_ORDER");
     		// the order received has not been put in ReceivedOrders
     		if(ReceivedOrders.containsKey(received_message.getIdNumber()) == false){
         		// if the node is not the sender
@@ -116,7 +125,7 @@ public class ExampleCaster extends Multicaster {
         	}
         	// the message received has already been put in ReceivedOrders
         	else{
-        		mcui.debug("the ORDER has already been put in ReceivedOrders");
+        		//mcui.debug("the ORDER has already been put in ReceivedOrders");
         		return true;
         	}
     	}
@@ -135,8 +144,8 @@ public class ExampleCaster extends Multicaster {
     
     // Deliver message
     private void deliverMessage(ExtendMessage received_message){
-    	mcui.debug("HoldBackQueue.containsKey(received_message.getIdNumber())="+HoldBackQueue.containsKey(received_message.getIdNumber()));
-    	mcui.debug("Rg == Integer.valueOf(received_message.getText()="+Integer.valueOf(received_message.getText().split("/")[1]));
+    	//mcui.debug("HoldBackQueue.containsKey(received_message.getIdNumber())="+HoldBackQueue.containsKey(received_message.getIdNumber()));
+    	//mcui.debug("Rg == Integer.valueOf(received_message.getText()="+Integer.valueOf(received_message.getText().split("/")[1]));
     	
     	while(HoldBackQueue.containsKey(received_message.getIdNumber()) && Rg == Integer.valueOf(received_message.getText().split("/")[1])){ 
     		HoldBackQueue.remove(received_message.getText());
@@ -174,6 +183,22 @@ public class ExampleCaster extends Multicaster {
 
     }
 
+    // Set new sequencer if the previous sequencer crashes
+    private void setNewSequencer(){
+    	for (int i = hosts - 1; i >= 0; i--){
+    		if (nodesStatus[i] == 0) {
+    			sequencer_id = i;
+                break;
+            }
+    	}
+    	if(isSequencer()){
+        	mcui.debug("I'm the new sequencer.");
+        }
+        else{
+        	mcui.debug("The new sequencer is "+sequencer_id);
+        }
+    }
+    
     /**
      * Signals that a peer is down and has been down for a while to
      * allow for messages taking different paths from this peer to
@@ -181,7 +206,11 @@ public class ExampleCaster extends Multicaster {
      * @param peer	The dead peer
      */
     public void basicpeerdown(int peer) {
-        mcui.debug("Peer "+peer+" has been dead for a while now!");
+        mcui.debug("Node "+peer+" crashes!");
+        nodesStatus[peer] = CRASHED;
+        if(peer == sequencer_id){
+        	setNewSequencer();
+        }
     }
       
     
