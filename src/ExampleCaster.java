@@ -1,4 +1,3 @@
-
 import mcgui.*;
 
 import java.util.*;
@@ -98,35 +97,35 @@ public class ExampleCaster extends Multicaster {
     private boolean isReliableMulticast(ExtendMessage received_message){
     	/* if the received message is the type of MESSAGE */
     	if(received_message.getType() == ExtendMessage.TYPE_MESSAGE){
-			// the message received has not been put in HoldBackQueue
-    		if(HoldBackQueue.containsKey(received_message.getIdNumber()) == false){
+    		// the message received has already been put in HoldBackQueue
+    		if(HoldBackQueue.containsKey(received_message.getIdNumber()) == true){
+    			//mcui.debug("the MESSAGE has already been put in HoldBackQueue");
+        		return true;
+        	}
+    		// the message received has not been put in HoldBackQueue
+        	else{
         		// if the node is not the sender
         		if(id != received_message.getSender()){
         			// R-multicast the received message to other nodes for reliability
         			multicast(received_message);
         		}
-        	}
-        	// the message received has already been put in HoldBackQueue
-        	else{
-        		//mcui.debug("the MESSAGE has already been put in HoldBackQueue");
-        		return true;
+        		return false;
         	}
     	}
     	/* if the received message is the type of TYPE_SEQ_ORDER */
     	if(received_message.getType() == ExtendMessage.TYPE_SEQ_ORDER){
-    		//mcui.debug("TYPE_SEQ_ORDER");
+    		// the message received has already been put in ReceivedOrders
+    		if(ReceivedOrders.containsKey(received_message.getIdNumber()) == true){
+    			//mcui.debug("the ORDER has already been put in ReceivedOrders");
+        		return true;
+        	}
     		// the order received has not been put in ReceivedOrders
-    		if(ReceivedOrders.containsKey(received_message.getIdNumber()) == false){
-        		// if the node is not the sender
-        		if(id != received_message.getSender()){
+        	else{
+        		// if the node is not the sender  id != received_message.getSender()
+        		if(isSequencer() == false){
         			// R-multicast the received message to other nodes for reliability
         			multicast(received_message);
         		}
-        	}
-        	// the message received has already been put in ReceivedOrders
-        	else{
-        		//mcui.debug("the ORDER has already been put in ReceivedOrders");
-        		return true;
         	}
     	}
     	return false;
@@ -144,14 +143,16 @@ public class ExampleCaster extends Multicaster {
     
     // Deliver message
     private void deliverMessage(ExtendMessage received_message){
-    	//mcui.debug("HoldBackQueue.containsKey(received_message.getIdNumber())="+HoldBackQueue.containsKey(received_message.getIdNumber()));
-    	//mcui.debug("Rg == Integer.valueOf(received_message.getText()="+Integer.valueOf(received_message.getText().split("/")[1]));
+    	mcui.debug("HoldBackQueue.containsKey()="+HoldBackQueue.containsKey(received_message.getIdNumber()));
+    	mcui.debug("Rg = "+Rg);
+    	mcui.debug("Sg ="+Integer.valueOf(received_message.getText().split("/")[1]));
     	
     	while(HoldBackQueue.containsKey(received_message.getIdNumber()) && Rg == Integer.valueOf(received_message.getText().split("/")[1])){ 
     		HoldBackQueue.remove(received_message.getText());
-    		ReceivedOrders.remove(received_message.getIdNumber());
+    		//ReceivedOrders.remove(received_message.getIdNumber());
     		mcui.deliver(received_message.getSender(), received_message.getText().split("/")[0]);
     		Rg = Integer.valueOf(received_message.getText().split("/")[1]) + 1;
+    		mcui.debug("New Rg ="+Rg);
     	}
     	
     }
@@ -164,11 +165,13 @@ public class ExampleCaster extends Multicaster {
     	
     	ExtendMessage received_message = (ExtendMessage) message;
 
-    	if(isReliableMulticast(received_message)){ // if message has been received, then return
+    	if(isReliableMulticast(received_message) == true){ // if message has been received, then return
+    		//mcui.debug("isReliableMulticast==true");
     		return;
     	}
     	
     	if(received_message.getType() == ExtendMessage.TYPE_MESSAGE){
+    		mcui.debug("TYPE_MESSAGE");
     		// put the current received order in HoldBackQueue
 			HoldBackQueue.put(received_message.getIdNumber(),received_message);
 			if(isSequencer()){
@@ -176,6 +179,7 @@ public class ExampleCaster extends Multicaster {
 			}
     	}
     	if(received_message.getType() == ExtendMessage.TYPE_SEQ_ORDER){
+    		mcui.debug("TYPE_SEQ_ORDER");
     		// put the current received order in ReceivedOrders
 			ReceivedOrders.put(received_message.getIdNumber(),received_message);
 			deliverMessage(received_message);
