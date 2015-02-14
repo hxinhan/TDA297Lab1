@@ -68,16 +68,6 @@ public class ExampleCaster extends Multicaster {
             }
         }
     }
-    // Generates Sequencer Number and multicasts to other nodes
-    private void generateSeqMulticast(int Sg){
-    	// Increment Sequqncer Number by 1
-    	Sg = Sg + 1;
-    	// Create unique id for order
-    	String order_id = createUniqueId();
-    	ExtendMessage order = new ExtendMessage(id, "Order", order_id,ExtendMessage.TYPE_SEQ_ORDER);
-        // Multicast order to other nodes
-    	multicast(order);
-    }
     
         
     /**
@@ -144,6 +134,30 @@ public class ExampleCaster extends Multicaster {
     	
     }
     
+ // Generates Sequencer Number and multicasts to other nodes
+    private void generateSeqMulticast(ExtendMessage received_message){
+    	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! id
+    	ExtendMessage order = new ExtendMessage(received_message.getSender(), received_message.getText()+"/"+String.valueOf(Sg), received_message.getIdNumber(),ExtendMessage.TYPE_SEQ_ORDER);
+        // Multicast order to other nodes
+    	multicast(order);
+    	// Increment Sequqncer Number by 1
+    	Sg = Sg + 1;
+    }
+    
+    // deliver message
+    private void deliverMessage(ExtendMessage received_message){
+    	mcui.debug("HoldBackQueue.containsKey(received_message.getIdNumber())="+HoldBackQueue.containsKey(received_message.getIdNumber()));
+    	mcui.debug("Rg == Integer.valueOf(received_message.getText()="+Integer.valueOf(received_message.getText().split("/")[1]));
+    	
+    	while(HoldBackQueue.containsKey(received_message.getIdNumber()) && Rg == Integer.valueOf(received_message.getText().split("/")[1])){ //&& Rg == Integer.valueOf(received_message.getText())
+    		HoldBackQueue.remove(received_message.getText());
+    		ReceivedOrders.remove(received_message.getIdNumber());
+    		mcui.deliver(received_message.getSender(), received_message.getText().split("/")[0]);
+    		Rg = Integer.valueOf(received_message.getText().split("/")[1]) + 1;
+    	}
+    	
+    }
+    
     /**
      * Receive a basic message
      * @param message  The message received
@@ -151,7 +165,7 @@ public class ExampleCaster extends Multicaster {
     public void basicreceive(int peer,Message message) {
     	
     	ExtendMessage received_message = (ExtendMessage) message;
-    	
+
     	if(isReliableMulticast(received_message)){ // if message has been received, then return
     		return;
     	}
@@ -159,10 +173,21 @@ public class ExampleCaster extends Multicaster {
     	if(received_message.getType() == ExtendMessage.TYPE_MESSAGE){
     		// put the current received order in HoldBackQueue
 			HoldBackQueue.put(received_message.getIdNumber(),received_message);
+			if(isSequencer()){
+				generateSeqMulticast(received_message);
+	        	mcui.deliver(message.getSender(), received_message.getText(),"isSequencerr()");
+			}
+			else{
+				//deliverMessage(received_message);
+			}
     	}
     	if(received_message.getType() == ExtendMessage.TYPE_SEQ_ORDER){
+    		if(isSequencer()){
+    			return;
+    		}
     		// put the current received order in ReceivedOrders
 			ReceivedOrders.put(received_message.getIdNumber(),received_message);
+			deliverMessage(received_message);
     	}
     	
     	
