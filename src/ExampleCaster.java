@@ -54,18 +54,22 @@ public class ExampleCaster extends Multicaster {
         	return false;
         }
     }
+    
     // Create unique id for message
     private String createUniqueId(){
     	String unique_id = UUID.randomUUID().toString().replaceAll("-", "");
     	return unique_id;
     }
+    
     // B-Multicast message to nodes
     private void multicast(ExtendMessage message){
     	for(int i=0; i < hosts; i++) {
-            /* Sends to everyone except itself */
+            /* Sends to everyone except itself 
             if(i != id) {
                 bcom.basicsend(i,message);
             }
+            */
+    		bcom.basicsend(i,message);
         }
     }
     
@@ -86,9 +90,10 @@ public class ExampleCaster extends Multicaster {
         	mcui.debug("I'm the sequencer.");
         	//generateSeqMulticast(Sg);
         	//mcui.deliver(id, messagetext, "from sequencer!");
+        	//HoldBackQueue.put(message.getIdNumber(),message);
         }
         else{
-        	HoldBackQueue.put(message.getIdNumber(),message);
+        	//HoldBackQueue.put(message.getIdNumber(),message);
         }
 
         //mcui.deliver(id, messagetext, "from myself!");
@@ -175,16 +180,19 @@ public class ExampleCaster extends Multicaster {
 			HoldBackQueue.put(received_message.getIdNumber(),received_message);
 			if(isSequencer()){
 				generateSeqMulticast(received_message);
-	        	mcui.deliver(message.getSender(), received_message.getText(),"isSequencerr()");
+	        	//mcui.deliver(message.getSender(), received_message.getText(),"isSequencerr()");
 			}
 			else{
 				//deliverMessage(received_message);
+				//HoldBackQueue.put(received_message.getIdNumber(),received_message);
 			}
     	}
     	if(received_message.getType() == ExtendMessage.TYPE_SEQ_ORDER){
+    		/*
     		if(isSequencer()){
     			return;
     		}
+    		*/
     		// put the current received order in ReceivedOrders
 			ReceivedOrders.put(received_message.getIdNumber(),received_message);
 			deliverMessage(received_message);
