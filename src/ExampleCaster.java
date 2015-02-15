@@ -182,7 +182,6 @@ public class ExampleCaster extends Multicaster {
     	while(true){
     		if(HoldBackQueue.containsKey(received_message.getIdNumber()) && Rg == Integer.valueOf(received_message.getText().split("/")[1])){
     			HoldBackQueue.remove(received_message.getText());
-    			
         		// get message sender's id	
     			int sender_id = received_message.getSender();
 
@@ -211,7 +210,6 @@ public class ExampleCaster extends Multicaster {
     	}
     	
     	if(received_message.getType() == ExtendMessage.TYPE_MESSAGE){
-    		mcui.debug("TYPE_MESSAGE");
     		// put the current received order in HoldBackQueue
 			HoldBackQueue.put(received_message.getIdNumber(),received_message);
 			if(isSequencer()){
@@ -219,7 +217,6 @@ public class ExampleCaster extends Multicaster {
 			}
     	}
     	if(received_message.getType() == ExtendMessage.TYPE_SEQ_ORDER){
-    		mcui.debug("TYPE_SEQ_ORDER");
     		// put the current received order in ReceivedOrders
 			ReceivedOrders.put(received_message.getIdNumber(),received_message);
 			deliverMessage(received_message);
