@@ -142,6 +142,19 @@ public class ExampleCaster extends Multicaster {
     	return Integer.parseInt(received_message.getClocks().split("#")[node_id]);
     }
     
+    // check whether the sequencer has received any message that the message sender had delivered at the time it multicast the message
+    private boolean checkReceivedAnyMessageFromSender(ExtendMessage received_message){
+    	for(int i=0;i<hosts;i++){
+    		if(i!= received_message.getSender()){
+    			// if the sequencer hasn't receive any message that the message sender had delivered at the time it multicast the message
+    			if(parseClockMessage(received_message,i) > nodeClocks[i]){
+        			return false;
+        		}
+    		}
+    	}
+    	return true;
+    }
+    
     // Generates Sequencer Number and multicasts to other nodes
     private void generateSeqMulticast(ExtendMessage received_message){
     	// get message sender's id	
@@ -151,7 +164,7 @@ public class ExampleCaster extends Multicaster {
     		// if the multicast message is not from the sequencer then the sequencer decide whether to multicast order
     		if(sender_id != sequencer_id){
     			// if the sequencer has received all the previous messages from the sender
-	    		if(parseClockMessage(received_message,sender_id) == nodeClocks[sender_id] + 1){
+	    		if(parseClockMessage(received_message,sender_id) == nodeClocks[sender_id] + 1 && checkReceivedAnyMessageFromSender(received_message) == true){
 	    			nodeClocks[sender_id]++;
 	    			ExtendMessage order = new ExtendMessage(received_message.getSender(), received_message.getText()+"/"+String.valueOf(Sg), received_message.getIdNumber(),ExtendMessage.TYPE_SEQ_ORDER,createClockMessage());
 	    			// Multicast order to other nodes
@@ -169,11 +182,8 @@ public class ExampleCaster extends Multicaster {
 	   	    	// Increment Sequqncer Number by 1
 	   	    	Sg = Sg + 1;
 	   	    	break;
-	   		}
-    		
+	   		}	
     	}
-
-    	
     }
     
     // Deliver message
@@ -193,7 +203,6 @@ public class ExampleCaster extends Multicaster {
         		break;
     		}
     	}
-
     }
     
     /**
