@@ -155,6 +155,14 @@ public class ExampleCaster extends Multicaster {
     	return true;
     }
     
+    private void createOrderMulticast(ExtendMessage received_message){
+    	ExtendMessage order = new ExtendMessage(received_message.getSender(), received_message.getText()+"/"+String.valueOf(Sg), received_message.getIdNumber(),ExtendMessage.TYPE_SEQ_ORDER,createClockMessage());
+		// Multicast order to other nodes
+    	multicast(order);
+	    // Increment Sequqncer Number by 1
+	    Sg = Sg + 1;
+    }
+    
     // Generates Sequencer Number and multicasts to other nodes
     private void generateSeqMulticast(ExtendMessage received_message){
     	// get message sender's id	
@@ -165,24 +173,19 @@ public class ExampleCaster extends Multicaster {
     		if(sender_id != sequencer_id){
     			// if the sequencer has received all the previous messages from the sender
 	    		if(parseClockMessage(received_message,sender_id) == nodeClocks[sender_id] + 1 && checkReceivedAnyMessageFromSender(received_message) == true){
+	    			// Increment vector clock by 1
 	    			nodeClocks[sender_id]++;
-	    			ExtendMessage order = new ExtendMessage(received_message.getSender(), received_message.getText()+"/"+String.valueOf(Sg), received_message.getIdNumber(),ExtendMessage.TYPE_SEQ_ORDER,createClockMessage());
-	    			// Multicast order to other nodes
-	    	    	multicast(order);
-	    	    	// Increment Sequqncer Number by 1
-	    	    	Sg = Sg + 1;
+	    			// Create order and multicast it to all nodes
+	    			createOrderMulticast(received_message);
 	    	    	break;
 	    		}
 	    	}
 	    	// if the multicast message is from the sequencer then the sequencer multicast order to all nodes
 	    	else{
-	    		ExtendMessage order = new ExtendMessage(received_message.getSender(), received_message.getText()+"/"+String.valueOf(Sg), received_message.getIdNumber(),ExtendMessage.TYPE_SEQ_ORDER,createClockMessage());
-	    		// Multicast order to other nodes
-	        	multicast(order);
-	   	    	// Increment Sequqncer Number by 1
-	   	    	Sg = Sg + 1;
+	    		// Create order and multicast it to all nodes
+	    		createOrderMulticast(received_message);
 	   	    	break;
-	   		}	
+	   		}
     	}
     }
     
@@ -191,11 +194,12 @@ public class ExampleCaster extends Multicaster {
 
     	while(true){
     		if(HoldBackQueue.containsKey(received_message.getIdNumber()) && Rg == Integer.valueOf(received_message.getText().split("/")[1])){
+    			// Remove the message from HoldBackQueue
     			HoldBackQueue.remove(received_message.getText());
         		// get message sender's id	
     			int sender_id = received_message.getSender();
-
-        		if( id != sender_id && isSequencer() == false ){ //&& isSequencer() == false
+    			// if the receiver is not sequencer or the message sender then increments its vector clock by 1 according to the message sender
+        		if( id != sender_id && isSequencer() == false ){
     				nodeClocks[sender_id]++;
     			}
         		mcui.deliver(received_message.getSender(), received_message.getText().split("/")[0]);
