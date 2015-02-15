@@ -182,9 +182,13 @@ public class ExampleCaster extends Multicaster {
 	    	}
 	    	// if the multicast message is from the sequencer then the sequencer multicast order to all nodes
 	    	else{
-	    		// Create order and multicast it to all nodes
-	    		createOrderMulticast(received_message);
-	   	    	break;
+	    		//mcui.debug("parseClockMessage(received_message,sender_id) = "+parseClockMessage(received_message,sender_id));
+	    		//mcui.debug("nodeClocks[sender_id] = "+nodeClocks[sender_id]);
+	    		//if(parseClockMessage(received_message,sender_id) == nodeClocks[sender_id] && checkReceivedAnyMessageFromSender(received_message) == true){ //&& checkReceivedAnyMessageFromSender(received_message) == true
+		    		// Create order and multicast it to all nodes
+		    		createOrderMulticast(received_message);
+		   	    	break;
+	    		//}
 	   		}
     	}
     }
