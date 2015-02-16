@@ -1,6 +1,7 @@
 import mcgui.*;
 
 import java.util.*;
+import java.util.Map.Entry;
 
 
 /**
@@ -13,8 +14,9 @@ public class ExampleCaster extends Multicaster {
 	int Rg;
 	int Sg;
 	int sequencer_id; // sequencer's id
-	LinkedHashMap<String, ExtendMessage> HoldBackQueue; // the hold-back queue to store the messages that we have received but not delivered
-	LinkedHashMap<String, ExtendMessage> ReceivedOrders; // store all the orders which have received
+	HashMap<String, ExtendMessage> HoldBackQueue; // the hold-back queue to store the messages that we have received but not delivered
+	HashMap<String, ExtendMessage> ReceivedMessages; // store all the messages which have received
+	HashMap<String, ExtendMessage> ReceivedOrders; // store all the orders which have received
 	final List<String> hold_back_queue = new LinkedList<String>(); // hold_back_queue
 	int ALIVE;
 	int CRASHED;
@@ -33,6 +35,7 @@ public class ExampleCaster extends Multicaster {
         Sg = 0;
         sequencer_id = hosts -1;
         HoldBackQueue = new LinkedHashMap<String, ExtendMessage>();
+        ReceivedMessages = new LinkedHashMap<String, ExtendMessage>();
         ReceivedOrders = new LinkedHashMap<String, ExtendMessage>();
         ALIVE = 0;
         CRASHED = 1;
@@ -87,7 +90,7 @@ public class ExampleCaster extends Multicaster {
     	String message_id = createUniqueId();
     	nodeClocks[id]++;
     	ExtendMessage message = new ExtendMessage(id, messagetext, message_id,ExtendMessage.TYPE_MESSAGE,createClockMessage());
-    	ExtendMessage lastSentMessage = message;
+
     	multicast(message); 	
         mcui.debug("Sent out: \""+messagetext+"\"");
         //mcui.debug("My Clocks After Sent out: "+nodeClocks[0]+nodeClocks[1]+nodeClocks[2]);
@@ -98,7 +101,7 @@ public class ExampleCaster extends Multicaster {
     	/* if the received message is the type of MESSAGE */
     	if(received_message.getType() == ExtendMessage.TYPE_MESSAGE){
     		// the message received has already been put in HoldBackQueue
-    		if(HoldBackQueue.containsKey(received_message.getIdNumber()) == true){
+    		if(ReceivedMessages.containsKey(received_message.getIdNumber()) == true){
     			//mcui.debug("the MESSAGE has already been put in HoldBackQueue");
         		return true;
         	}
@@ -158,11 +161,13 @@ public class ExampleCaster extends Multicaster {
     }
     
     private void createOrderMulticast(ExtendMessage received_message){
+    	mcui.debug("createOrderMulticast");
     	ExtendMessage order = new ExtendMessage(received_message.getSender(), received_message.getText()+"/"+String.valueOf(Sg), received_message.getIdNumber(),ExtendMessage.TYPE_SEQ_ORDER,createClockMessage());
-		// Multicast order to other nodes
+    	// Multicast order to other nodes
     	multicast(order);
 	    // Increment Sequqncer Number by 1
 	    Sg = Sg + 1;
+	    mcui.debug("finish createOrderMulticast");
     }
     
     // Generates Sequencer Number and multicasts to other nodes
@@ -194,11 +199,32 @@ public class ExampleCaster extends Multicaster {
     
     // Deliver message
     private void deliverMessage(ExtendMessage received_message){
-
+    	mcui.debug("deliverMessage");
+    	if(Rg == Integer.valueOf(received_message.getText().split("/")[1])){
+			mcui.debug("Rg == Integer.valueOf()");
+			mcui.debug("Rg == "+Rg);
+			mcui.debug("Integer.valueOf() == "+Integer.valueOf(received_message.getText().split("/")[1]));
+		}
+    	
+    	if(HoldBackQueue.containsKey(received_message.getIdNumber())){
+    		mcui.debug("HoldBackQueue.containsKey(received_message.getIdNumber())");
+    	}
+    	
     	while(true){
+    		
     		if(HoldBackQueue.containsKey(received_message.getIdNumber()) && Rg == Integer.valueOf(received_message.getText().split("/")[1])){
     			// Remove the message from HoldBackQueue
-    			HoldBackQueue.remove(received_message.getText());
+    			mcui.debug("received_message.getText() =" +received_message.getText());
+    			mcui.debug("received_message.getIdNumber() =" +received_message.getIdNumber());
+    			mcui.debug("NO1. My Clocks: "+nodeClocks[0]+":"+nodeClocks[1]+":"+nodeClocks[2]);
+    	        mcui.debug("HoldBackQueue.size() = "+HoldBackQueue.size());
+    	        /*
+    			for(Entry<String, ExtendMessage> entry:HoldBackQueue.entrySet()){
+    				mcui.debug(entry.getValue().getClocks()+" ");
+    			}
+    			*/
+    			HoldBackQueue.remove(received_message.getIdNumber());
+    			mcui.debug("HoldBackQueue.size() = "+HoldBackQueue.size());
         		// get message sender's id	
     			int sender_id = received_message.getSender();
     			// if the receiver is not sequencer or the message sender then increments its vector clock by 1 according to the message sender
@@ -210,7 +236,7 @@ public class ExampleCaster extends Multicaster {
     			mcui.deliver(received_message.getSender(), received_message.getText().split("/")[0]);
         		Rg = Integer.valueOf(received_message.getText().split("/")[1]) + 1;
         		
-        		mcui.debug("My Clocks: "+nodeClocks[0]+nodeClocks[1]+nodeClocks[2]);
+        		mcui.debug("NO2. My Clocks: "+nodeClocks[0]+":"+nodeClocks[1]+":"+nodeClocks[2]);
         		
         		break;
     		}
@@ -224,20 +250,24 @@ public class ExampleCaster extends Multicaster {
     public void basicreceive(int peer,Message message) {
     	
     	ExtendMessage received_message = (ExtendMessage) message;
-
+    	mcui.debug("basicreceive -- "+received_message.getType());
     	// if message has been received, then return
     	if(isReliableMulticast(received_message) == true){ 
     		return;
     	}
     	
     	if(received_message.getType() == ExtendMessage.TYPE_MESSAGE){
-    		// put the current received order in HoldBackQueue
+    		mcui.debug("TYPE_MESSAGE");
+    		// put the current received message in ReceivedMessages
+    		ReceivedMessages.put(received_message.getIdNumber(),received_message);
+    		// put the current received message in HoldBackQueue
 			HoldBackQueue.put(received_message.getIdNumber(),received_message);
 			if(isSequencer()){
 				generateSeqMulticast(received_message);
 			}
     	}
     	if(received_message.getType() == ExtendMessage.TYPE_SEQ_ORDER){
+    		mcui.debug("TYPE_SEQ_ORDER");
     		// put the current received order in ReceivedOrders
 			ReceivedOrders.put(received_message.getIdNumber(),received_message);
 			deliverMessage(received_message);
@@ -274,6 +304,18 @@ public class ExampleCaster extends Multicaster {
         if(peer == sequencer_id){
         	setNewSequencer();
         }
+        
+        mcui.debug("My Clocks: "+nodeClocks[0]+":"+nodeClocks[1]+":"+nodeClocks[2]);
+		/*
+        for(int i=0;i<HoldBackQueue.size();i++){
+			mcui.debug("Hold_Back_Queue :"+HoldBackQueue.v);
+		}
+		*/
+        mcui.debug("HoldBackQueue.size() = "+HoldBackQueue.size());
+		for(Entry<String, ExtendMessage> entry:HoldBackQueue.entrySet()){
+			mcui.debug(entry.getValue().getClocks()+" ");
+		}
+        
     }
       
     
