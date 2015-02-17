@@ -196,7 +196,7 @@ public class ExampleCaster extends Multicaster {
     			HoldBackQueue.remove(received_message.getIdNumber());
         		// Get message sender's id	
     			int sender_id = received_message.getSender();
-    			// If the receiver is not sequencer or the message sender then increments its vector clock by 1 according to the message sender
+    			// If the receiver is not sequencer and the message sender then increments its vector clock by 1 according to the message sender			
     			if( id != sender_id && isSequencer() == false ){
     				nodeClocks[sender_id]++;
     			}
@@ -227,6 +227,7 @@ public class ExampleCaster extends Multicaster {
     		ReceivedMessages.put(received_message.getIdNumber(),received_message);
     		// Put the current received message in HoldBackQueue
 			HoldBackQueue.put(received_message.getIdNumber(),received_message);
+			// If the receiver is the sequencer
 			if(isSequencer()){
 				generateSeqMulticast(received_message);
 			}
@@ -260,7 +261,7 @@ public class ExampleCaster extends Multicaster {
     
     // The new sequencer need to handle the message that are not delivered because of the crash of the previous sequencer
     private void actAsNewSequencer(){
-    	// Find the last logic clock of mine when the previous sequencer dies
+    	// Find the last logic clock of the new sequencer when the previous sequencer dies
     	int minimal = 0;
     	for(Entry<String, ExtendMessage> entry:HoldBackQueue.entrySet()){
     		int temp = parseClockMessage(entry.getValue(),id);
@@ -291,7 +292,6 @@ public class ExampleCaster extends Multicaster {
     		// Generates Sequencer Number and multicasts to other nodes
     		generateSeqMulticast(entry.getValue());
     	}
-    	
     }
     
     /**
