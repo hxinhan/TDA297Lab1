@@ -5,9 +5,9 @@ import java.util.Map.Entry;
 
 
 /**
- * Simple example of how to use the Multicaster interface.
+ * Implementing a reliable and ordered multicast protocol
  *
- * @author Andreas Larsson &lt;larandr@chalmers.se&gt;
+ * @author Group 11
  */
 public class ExampleCaster extends Multicaster {
 
@@ -17,7 +17,6 @@ public class ExampleCaster extends Multicaster {
 	HashMap<String, ExtendMessage> HoldBackQueue; // the hold-back queue to store the messages that we have received but not delivered
 	HashMap<String, ExtendMessage> ReceivedMessages; // stores all the messages which have received
 	HashMap<String, ExtendMessage> ReceivedOrders; // stores all the orders which have received
-	final List<String> hold_back_queue = new LinkedList<String>(); // hold_back_queue
 	int ALIVE; // sate of a alive node
 	int CRASHED; // state of a crashed node
 	int[] nodesStatus; // store the status of nodes. 0 = ALIVE 1 = CRASHED
