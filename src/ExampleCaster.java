@@ -11,19 +11,17 @@ import java.util.Map.Entry;
  */
 public class ExampleCaster extends Multicaster {
 
-	int Rg;
-	int Sg;
+	int Rg; // sequence number of a normal node
+	int Sg; // sequence number of a sequencer
 	int sequencer_id; // sequencer's id
 	HashMap<String, ExtendMessage> HoldBackQueue; // the hold-back queue to store the messages that we have received but not delivered
 	HashMap<String, ExtendMessage> ReceivedMessages; // stores all the messages which have received
 	HashMap<String, ExtendMessage> ReceivedOrders; // stores all the orders which have received
 	final List<String> hold_back_queue = new LinkedList<String>(); // hold_back_queue
-	int ALIVE;
-	int CRASHED;
+	int ALIVE; // sate of a alive node
+	int CRASHED; // state of a crashed node
 	int[] nodesStatus; // store the status of nodes. 0 = ALIVE 1 = CRASHED
 	int[] nodeClocks; // store the vector clocks
-	
-	ExtendMessage lastSentMessage;
 	
 	
     /**
@@ -41,6 +39,7 @@ public class ExampleCaster extends Multicaster {
         CRASHED = 1;
         nodesStatus = new int[hosts];
         nodeClocks=new int[hosts];
+        // Initiate the vector clock
         for(int i=0;i<hosts;i++){
         	nodeClocks[i] = 0;
         }
@@ -94,7 +93,7 @@ public class ExampleCaster extends Multicaster {
         mcui.debug("Sent out: \""+messagetext+"\"");
     }
     
-    
+    // Check if the message has been received already
     private boolean isReliableMulticast(ExtendMessage received_message){
     	/* if the received message is the type of MESSAGE */
     	if(received_message.getType() == ExtendMessage.TYPE_MESSAGE){
@@ -139,12 +138,12 @@ public class ExampleCaster extends Multicaster {
     	return Clocks;
     }
     
-    // parse ClockMessage and return node's clock value
+    // Parse ClockMessage and return node's clock value
     private int parseClockMessage(ExtendMessage received_message,int node_id){
     	return Integer.parseInt(received_message.getClocks().split("#")[node_id]);
     }
     
-    // check whether the sequencer has received any message that the message sender had delivered at the time it multicast the message
+    // Check whether the sequencer has received any message that the message sender had delivered at the time it multicast the message
     private boolean checkReceivedAnyMessageFromSender(ExtendMessage received_message){
     	for(int i=0;i<hosts;i++){
     		if(i!= received_message.getSender()){
@@ -157,6 +156,7 @@ public class ExampleCaster extends Multicaster {
     	return true;
     }
     
+    // Create order message and multicast it
     private void createOrderMulticast(ExtendMessage received_message){
     	ExtendMessage order = new ExtendMessage(received_message.getSender(), received_message.getText()+"/"+String.valueOf(Sg), received_message.getIdNumber(),ExtendMessage.TYPE_SEQ_ORDER,createClockMessage());
     	// Multicast order to other nodes
@@ -167,7 +167,6 @@ public class ExampleCaster extends Multicaster {
     
     // Generates Sequencer Number and multicasts to other nodes
     private void generateSeqMulticast(ExtendMessage received_message){
-    	mcui.debug("generateSeqMulticast");
     	// get message sender's id	
     	int sender_id = received_message.getSender();
     	while(true){
@@ -224,7 +223,7 @@ public class ExampleCaster extends Multicaster {
     	if(isReliableMulticast(received_message) == true){ 
     		return;
     	}
-    	
+    	// If the message is text message
     	if(received_message.getType() == ExtendMessage.TYPE_MESSAGE){
     		// put the current received message in ReceivedMessages
     		ReceivedMessages.put(received_message.getIdNumber(),received_message);
@@ -234,6 +233,7 @@ public class ExampleCaster extends Multicaster {
 				generateSeqMulticast(received_message);
 			}
     	}
+    	// If the message if order message
     	if(received_message.getType() == ExtendMessage.TYPE_SEQ_ORDER){
     		// put the current received order in ReceivedOrders
 			ReceivedOrders.put(received_message.getIdNumber(),received_message);
@@ -252,6 +252,7 @@ public class ExampleCaster extends Multicaster {
     	}
     	if(isSequencer()){
         	mcui.debug("I'm the new sequencer.");
+        	// The new sequencer to handle the crashing problem of the previous sequencer
         	actAsNewSequencer();
         }
         else{
@@ -259,11 +260,8 @@ public class ExampleCaster extends Multicaster {
         }
     }
     
-    
-    //
+    // The new sequencer need to handle the message that are not delivered because of the crash of the previous sequencer
     private void actAsNewSequencer(){
-    	mcui.debug(" "+HoldBackQueue.size()+" messages have not been delivered.");
-    	mcui.debug("My current logic clock is "+nodeClocks[id]);
     	// find the last logic clock of mine when the previous sequencer dies
     	int minimal = 0;
     	for(Entry<String, ExtendMessage> entry:HoldBackQueue.entrySet()){
