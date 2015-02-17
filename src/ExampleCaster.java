@@ -243,8 +243,9 @@ public class ExampleCaster extends Multicaster {
 
     // Set new sequencer if the previous sequencer crashes
     private void setNewSequencer(){
+    	// 
     	for (int i = hosts - 1; i >= 0; i--){
-    		if (nodesStatus[i] == 0) {
+    		if (nodesStatus[i] == ALIVE) {
     			sequencer_id = i;
                 break;
             }
@@ -274,13 +275,10 @@ public class ExampleCaster extends Multicaster {
 		}
     	// Set the new sequencer's logic clock back to the previous moment when the previous crashed
     	int last_logic_clock;
-    	if(minimal != 0){
+    	if(minimal != nodeClocks[id]){
     		last_logic_clock = minimal - 1;
+    		nodeClocks[id] = last_logic_clock;
     	}
-    	else{
-    		last_logic_clock = minimal;
-    	}
-    	nodeClocks[id] = last_logic_clock;
     	// Set new sequencer's Sg equals to its Rg
     	Sg = Rg;
     	// Generate Sequencer and Multicast
