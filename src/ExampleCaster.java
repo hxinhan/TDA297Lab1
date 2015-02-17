@@ -11,16 +11,16 @@ import java.util.Map.Entry;
  */
 public class ExampleCaster extends Multicaster {
 
-	int Rg; // sequence number of a normal node
-	int Sg; // sequence number of a sequencer
-	int sequencer_id; // sequencer's id
-	HashMap<String, ExtendMessage> HoldBackQueue; // the hold-back queue to store the messages that we have received but not delivered
-	HashMap<String, ExtendMessage> ReceivedMessages; // stores all the messages which have received
-	HashMap<String, ExtendMessage> ReceivedOrders; // stores all the orders which have received
-	int ALIVE; // sate of a alive node
-	int CRASHED; // state of a crashed node
-	int[] nodesStatus; // store the status of nodes. 0 = ALIVE 1 = CRASHED
-	int[] nodeClocks; // store the vector clocks
+	int Rg; // Sequence number of a normal node
+	int Sg; // Sequence number of a sequencer
+	int sequencer_id; // Sequencer's id
+	HashMap<String, ExtendMessage> HoldBackQueue; // The hold-back queue to store the messages that we have received but not delivered
+	HashMap<String, ExtendMessage> ReceivedMessages; // Stores all the messages which have received
+	HashMap<String, ExtendMessage> ReceivedOrders; // Stores all the orders which have received
+	int ALIVE; // State of a alive node
+	int CRASHED; // State of a crashed node
+	int[] nodesStatus; // Store the status of nodes. 0 = ALIVE 1 = CRASHED
+	int[] nodeClocks; // Store the vector clocks
 	
 	
     /**
@@ -94,27 +94,26 @@ public class ExampleCaster extends Multicaster {
     
     // Check if the message has been received already
     private boolean isReliableMulticast(ExtendMessage received_message){
-    	/* if the received message is the type of MESSAGE */
+    	/* If the received message is the type of MESSAGE */
     	if(received_message.getType() == ExtendMessage.TYPE_MESSAGE){
-    		// the message received has already been put in HoldBackQueue
+    		// The message received has already been put in HoldBackQueue
     		if(ReceivedMessages.containsKey(received_message.getIdNumber()) == true){
-    			//mcui.debug("the MESSAGE has already been put in HoldBackQueue");
         		return true;
         	}
-    		// the message received has not been put in HoldBackQueue
+    		// The message received has not been put in HoldBackQueue
         	else{
         		// R-multicast the received message to all nodes for reliability
     			multicast(received_message);
         		return false;
         	}
     	}
-    	/* if the received message is the type of TYPE_SEQ_ORDER */
+    	/* If the received message is the type of TYPE_SEQ_ORDER */
     	if(received_message.getType() == ExtendMessage.TYPE_SEQ_ORDER){
-    		// the message received has already been put in ReceivedOrders
+    		// The message received has already been put in ReceivedOrders
     		if(ReceivedOrders.containsKey(received_message.getIdNumber()) == true){
         		return true;
         	}
-    		// the order received has not been put in ReceivedOrders
+    		// The order received has not been put in ReceivedOrders
         	else{
         		// R-multicast the received message to all nodes for reliability
     			multicast(received_message);
@@ -146,7 +145,7 @@ public class ExampleCaster extends Multicaster {
     private boolean checkReceivedAnyMessageFromSender(ExtendMessage received_message){
     	for(int i=0;i<hosts;i++){
     		if(i!= received_message.getSender()){
-    			// if the sequencer hasn't receive any message that the message sender had delivered at the time it multicast the message
+    			// If the sequencer hasn't receive any message that the message sender had delivered at the time it multicast the message
     			if(parseClockMessage(received_message,i) > nodeClocks[i]){
         			return false;
         		}
@@ -166,12 +165,12 @@ public class ExampleCaster extends Multicaster {
     
     // Generates Sequencer Number and multicasts to other nodes
     private void generateSeqMulticast(ExtendMessage received_message){
-    	// get message sender's id	
+    	// Get message sender's id	
     	int sender_id = received_message.getSender();
     	while(true){
-    		// if the multicast message is not from the sequencer then the sequencer decide whether to multicast order
+    		// If the multicast message is not from the sequencer then the sequencer decide whether to multicast order
     		if(sender_id != sequencer_id){
-    			// if the sequencer has received all the previous messages from the sender
+    			// If the sequencer has received all the previous messages from the sender
 	    		if(parseClockMessage(received_message,sender_id) == nodeClocks[sender_id] +1 && checkReceivedAnyMessageFromSender(received_message) == true){
 	    			// Increment vector clock by 1
 	    			nodeClocks[sender_id]++;
@@ -180,7 +179,7 @@ public class ExampleCaster extends Multicaster {
 	    	    	break;
 	    		}
 	    	}
-	    	// if the multicast message is from the sequencer then the sequencer multicast order to all nodes
+	    	// If the multicast message is from the sequencer then the sequencer multicast order to all nodes
 	    	else{
 	    		// Create order and multicast it to all nodes
 		    	createOrderMulticast(received_message);
@@ -195,9 +194,9 @@ public class ExampleCaster extends Multicaster {
     		if(HoldBackQueue.containsKey(received_message.getIdNumber()) && Rg == Integer.valueOf(received_message.getText().split("/")[1])){
     	        // Remove the message from HoldBackQueue
     			HoldBackQueue.remove(received_message.getIdNumber());
-        		// get message sender's id	
+        		// Get message sender's id	
     			int sender_id = received_message.getSender();
-    			// if the receiver is not sequencer or the message sender then increments its vector clock by 1 according to the message sender
+    			// If the receiver is not sequencer or the message sender then increments its vector clock by 1 according to the message sender
     			if( id != sender_id && isSequencer() == false ){
     				nodeClocks[sender_id]++;
     			}
@@ -218,15 +217,15 @@ public class ExampleCaster extends Multicaster {
     	
     	ExtendMessage received_message = (ExtendMessage) message;
 
-    	// if message has been received, then return
+    	// If message has been received, then return
     	if(isReliableMulticast(received_message) == true){ 
     		return;
     	}
     	// If the message is text message
     	if(received_message.getType() == ExtendMessage.TYPE_MESSAGE){
-    		// put the current received message in ReceivedMessages
+    		// Put the current received message in ReceivedMessages
     		ReceivedMessages.put(received_message.getIdNumber(),received_message);
-    		// put the current received message in HoldBackQueue
+    		// Put the current received message in HoldBackQueue
 			HoldBackQueue.put(received_message.getIdNumber(),received_message);
 			if(isSequencer()){
 				generateSeqMulticast(received_message);
@@ -234,7 +233,7 @@ public class ExampleCaster extends Multicaster {
     	}
     	// If the message if order message
     	if(received_message.getType() == ExtendMessage.TYPE_SEQ_ORDER){
-    		// put the current received order in ReceivedOrders
+    		// Put the current received order in ReceivedOrders
 			ReceivedOrders.put(received_message.getIdNumber(),received_message);
 			deliverMessage(received_message);
     	}
@@ -261,7 +260,7 @@ public class ExampleCaster extends Multicaster {
     
     // The new sequencer need to handle the message that are not delivered because of the crash of the previous sequencer
     private void actAsNewSequencer(){
-    	// find the last logic clock of mine when the previous sequencer dies
+    	// Find the last logic clock of mine when the previous sequencer dies
     	int minimal = 0;
     	for(Entry<String, ExtendMessage> entry:HoldBackQueue.entrySet()){
     		int temp = parseClockMessage(entry.getValue(),id);
@@ -304,7 +303,7 @@ public class ExampleCaster extends Multicaster {
     public void basicpeerdown(int peer) {
         mcui.debug("Node "+peer+" crashes!");
         nodesStatus[peer] = CRASHED;
-        // if the sequencer crashes, then set a new sequencer
+        // If the sequencer crashes, then set a new sequencer
         if(peer == sequencer_id){
         	setNewSequencer();
         }
