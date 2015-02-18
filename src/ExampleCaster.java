@@ -100,7 +100,7 @@ public class ExampleCaster extends Multicaster {
     		if(ReceivedMessages.containsKey(received_message.getIdNumber()) == true){
         		return true;
         	}
-    		// The message received has not been put in HoldBackQueue
+    		// The message received has not been put in ReceivedMessages queue
         	else{
         		// R-multicast the received message to all nodes for reliability
     			multicast(received_message);
@@ -113,7 +113,7 @@ public class ExampleCaster extends Multicaster {
     		if(ReceivedOrders.containsKey(received_message.getIdNumber()) == true){
         		return true;
         	}
-    		// The order received has not been put in ReceivedOrders
+    		// The order received has not been put in ReceivedOrders queue
         	else{
         		// R-multicast the received message to all nodes for reliability
     			multicast(received_message);
