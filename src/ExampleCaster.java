@@ -96,7 +96,7 @@ public class ExampleCaster extends Multicaster {
     private boolean isReliableMulticast(ExtendMessage received_message){
     	/* If the received message is the type of MESSAGE */
     	if(received_message.getType() == ExtendMessage.TYPE_MESSAGE){
-    		// The message received has already been put in HoldBackQueue
+    		// The message received has already been put in ReceivedMessages queue
     		if(ReceivedMessages.containsKey(received_message.getIdNumber()) == true){
         		return true;
         	}
@@ -109,7 +109,7 @@ public class ExampleCaster extends Multicaster {
     	}
     	/* If the received message is the type of TYPE_SEQ_ORDER */
     	if(received_message.getType() == ExtendMessage.TYPE_SEQ_ORDER){
-    		// The message received has already been put in ReceivedOrders
+    		// The message received has already been put in ReceivedOrders queue
     		if(ReceivedOrders.containsKey(received_message.getIdNumber()) == true){
         		return true;
         	}
@@ -262,7 +262,7 @@ public class ExampleCaster extends Multicaster {
     
     // The new sequencer need to handle the message that are not delivered because of the crash of the previous sequencer
     private void actAsNewSequencer(){
-    	// Find the last logic clock of the new sequencer when the previous sequencer dies
+    	// Find the lowest logic clock of the new sequencer when the previous sequencer dies
     	int minimal = 0;
     	for(Entry<String, ExtendMessage> entry:HoldBackQueue.entrySet()){
     		int temp = parseClockMessage(entry.getValue(),id);
@@ -274,20 +274,21 @@ public class ExampleCaster extends Multicaster {
     		}
 		}
     	// Set the new sequencer's logic clock back to the previous moment when the previous crashed
-    	int last_logic_clock;
+    	// If the new sequencer delivered some messages after the previous sequencer crashed
     	if(minimal != nodeClocks[id]){
-    		last_logic_clock = minimal - 1;
-    		nodeClocks[id] = last_logic_clock;
+    		//last_logic_clock = minimal - 1;
+    		//nodeClocks[id] = last_logic_clock;
+    		nodeClocks[id] = minimal - 1;
     	}
     	// Set new sequencer's Sg equals to its Rg
     	Sg = Rg;
     	// Generate Sequencer and Multicast
     	for(Entry<String, ExtendMessage> entry:HoldBackQueue.entrySet()){
-    		// If the message for the HoldBackQueue is sent by this node
+    		// If the message in the HoldBackQueue is sent by this node
     		if(entry.getValue().getSender() == id){
     			nodeClocks[id]++;
     		}
-    		// Generates Sequencer Number and multicasts to other nodes
+    		// Generates Sequence Number and multicasts to other nodes
     		generateSeqMulticast(entry.getValue());
     	}
     }

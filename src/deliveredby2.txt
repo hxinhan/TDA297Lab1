@@ -152,10 +152,3 @@
 1:stress-1-151
 1:stress-1-152
 1:stress-1-153
-1:stress-1-154
-1:stress-1-155
-1:stress-1-156
-1:stress-1-157
-1:stress-1-158
-1:stress-1-159
-1:stress-1-160
